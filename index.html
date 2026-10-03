@@ -89,6 +89,7 @@
     .gear-wrap { text-align:right; }
     .gear-label { color:#69716f; font-size:.6rem; letter-spacing:.12em; }
     .gear { font:900 3.7rem/.82 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--lime); }
+    .gear.shifted { color:#fff; text-shadow:0 0 18px var(--lime); transform:scale(1.12); }
     .rpm { height:5px; margin:13px 0 18px; background:#24292a; overflow:hidden; }
     #rpmBar { width:15%; height:100%; background:linear-gradient(90deg,var(--lime) 0 70%,#ffd73a 80%,var(--hot)); transition:width .05s linear; }
     .pedal { display:grid; grid-template-columns:62px 1fr 38px; align-items:center; gap:9px; margin:11px 0; font:650 .66rem/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em; }
@@ -157,13 +158,23 @@
       .speed { font-size:2.5rem; }.gear{font-size:2.5rem}.unit{margin-top:4px}.pedals{display:flex; flex:1; gap:8px}.pedal{flex:1; grid-template-columns:1fr; gap:4px; margin:0}.pedal>span:first-child,.pct{font-size:.55rem}.keys{display:none}.touch{display:flex}.topbar{padding:12px 14px}.sector{display:none}.message{top:10%}
     }
     .message.terminal { position:fixed; inset:0; left:0; top:0; transform:none; display:grid; place-items:center; width:100vw; min-width:0; padding:24px; background:radial-gradient(circle at 50% 45%,#101617e8 0 18%,#050707f7 70%); pointer-events:auto; z-index:50; }
-    .message.terminal .result-card { width:min(640px,100%); padding:clamp(28px,5vw,56px); border:1px solid #ffffff2e; background:#0b0f10f2; box-shadow:0 28px 90px #000; }
+    .message.terminal .result-card { width:min(640px,100%); max-height:calc(100dvh - 32px); overflow:auto; overscroll-behavior:contain; padding:clamp(28px,5vw,56px); border:1px solid #ffffff2e; background:#0b0f10f2; box-shadow:0 28px 90px #000; }
     .message.terminal #callout { color:#fff; font-size:clamp(2.1rem,6vw,4.8rem); line-height:.95; letter-spacing:-.04em; }
     .message.terminal #subcallout { max-width:52ch; margin:18px auto 0; color:#c6ccc8; font-size:clamp(.76rem,1.5vw,1rem); line-height:1.55; letter-spacing:.07em; }
     .message.terminal .leaderboard { display:block; }
     .message.terminal #resultRestart { display:block; }
     .message.terminal #resultRestart:focus-visible { outline:3px solid #fff; outline-offset:3px; }
     #app.terminal-state .map,#app.terminal-state .telemetry,#app.terminal-state .touch { opacity:.12; filter:blur(2px); pointer-events:none; }
+    @media (hover:none) and (orientation:landscape) and (max-height:500px) {
+      .message.terminal { padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left)); }
+      .message.terminal .result-card { max-height:calc(100dvh - 16px); padding:14px 18px; }
+      .message.terminal #callout { font-size:clamp(1.45rem,6vh,2.2rem); }
+      .message.terminal #subcallout { margin-top:8px; font-size:.68rem; line-height:1.3; }
+      .message.terminal .leaderboard { margin-top:10px; padding-top:8px; }
+      .message.terminal .leaderboard li { padding:4px 6px; }
+      .message.terminal .name-entry { margin-top:9px; }
+      .message.terminal #resultRestart { margin-top:10px; padding:9px 14px; }
+    }
   </style>
 </head>
 <body>
@@ -267,7 +278,7 @@
   function reset(){ Object.assign(car,{s:0,speed:0,gear:1,rpm:4100,throttle:0,brake:0,grip:1,shiftCut:0,finished:false,offTrack:false,crashed:false,crashPhase:0,entrySpeed:0,time:0,timerStarted:false,timingFlash:0,cornerMin:999,exitSpeed:0});running=true;showNameEntry(null);setTerminal(false);ui.callout.textContent='';ui.subcallout.textContent='';last=performance.now(); }
   function setWeather(mode){if(!CONDITIONS[mode]||mode===weather)return;weather=mode;document.documentElement.dataset.weather=mode;document.querySelectorAll('[data-weather]').forEach(button=>{const active=button.dataset.weather===mode;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});if(running||car.s>0)reset();renderScores();ui.callout.textContent=`${condition().label} TRACK`;ui.subcallout.textContent=mode==='wet'?'LOWER GRIP · LONGER BRAKING DISTANCE':'FULL GRIP · STANDARD BRAKING';car.timingFlash=1.4;}
   function setTrack(id){if(!TRACKS[id]||id===trackId)return;trackId=id;TRACK_DATA=TRACKS[id];document.documentElement.dataset.track=id;document.title=`APEX // Sector ${id}`;topoSamples=null;document.querySelectorAll('[data-track]').forEach(button=>{const active=button.dataset.track===id;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});if(running||car.s>0)reset();renderScores();ui.callout.textContent=`APEX // ${id}`;ui.subcallout.textContent=`${TRACK_DATA.name} · TARGET ${idealEntryMin()}–${idealEntryMax()} KM/H`;car.timingFlash=1.6;drawMap();}
-  function shift(dir){ if(!running||car.finished)return; const next=clamp(car.gear+dir,1,7); if(next===car.gear)return; car.gear=next; car.shiftCut=.18; blip(dir); }
+  function shift(dir){ if(!running||car.finished)return; const next=clamp(car.gear+dir,1,7); if(next===car.gear)return; car.gear=next; car.shiftCut=.18; ui.gear.textContent=car.gear;ui.gear.classList.remove('shifted');void ui.gear.offsetWidth;ui.gear.classList.add('shifted');setTimeout(()=>ui.gear.classList.remove('shifted'),140);blip(dir); }
   function makeNoiseBuffer(seconds=.6){const buffer=audio.createBuffer(1,audio.sampleRate*seconds,audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;return buffer;}
   function noiseLoop(freq,q){const src=audio.createBufferSource(),f=audio.createBiquadFilter(),g=audio.createGain();src.buffer=makeNoiseBuffer();src.loop=true;f.type='bandpass';f.frequency.value=freq;f.Q.value=q;g.gain.value=.0001;src.connect(f).connect(g).connect(masterGain);src.start();return g;}
   function noiseHit(duration,gain,freq){if(!audio)return;const src=audio.createBufferSource(),f=audio.createBiquadFilter(),g=audio.createGain(),t=audio.currentTime;src.buffer=makeNoiseBuffer(duration);f.type='lowpass';f.frequency.value=freq;g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);src.connect(f).connect(g).connect(masterGain);src.start(t);src.stop(t+duration);}
@@ -457,7 +468,10 @@
   document.addEventListener('webkitfullscreenchange',updateFullscreenButton);
   document.querySelector('#nameEntry').addEventListener('submit',e=>{e.preventDefault();saveDriverName();});
   document.querySelectorAll('[data-hold]').forEach(b=>{const name=b.dataset.hold;for(const ev of ['pointerdown','pointerenter'])b.addEventListener(ev,e=>{if(ev==='pointerdown')b.setPointerCapture(e.pointerId);keys[name]=true});for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>keys[name]=false)});
-  document.querySelectorAll('[data-tap]').forEach(b=>{let lastTap=0;const activate=e=>{e.preventDefault();e.stopPropagation();const now=performance.now();if(now-lastTap<180)return;lastTap=now;shift(b.dataset.tap==='up'?1:-1);b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),90)};b.addEventListener('pointerdown',activate,{passive:false});b.addEventListener('touchstart',activate,{passive:false});b.addEventListener('click',e=>{if(e.detail===0)activate(e)});});
+  let lastShiftTap=0;
+  window.apexShift=dir=>{const now=performance.now();if(now-lastShiftTap<140)return;lastShiftTap=now;shift(dir)};
+  document.querySelectorAll('[data-tap]').forEach(b=>{const activate=e=>{e.preventDefault();e.stopPropagation();window.apexShift(b.dataset.tap==='up'?1:-1);b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),90)};b.addEventListener('touchend',activate,{passive:false});b.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')activate(e)},{passive:false});b.addEventListener('click',e=>{if(e.detail===0)activate(e)});});
+  let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now},{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
   document.documentElement.dataset.weather=weather;document.documentElement.dataset.track=trackId;renderScores();resize();requestAnimationFrame(frame);
   if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
