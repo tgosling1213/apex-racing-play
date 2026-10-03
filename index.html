@@ -16,7 +16,7 @@
     * { box-sizing:border-box; }
     html,body { width:100%; height:100%; margin:0; overflow:hidden; overscroll-behavior:none; background:#07090a; color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-text-size-adjust:100%; -webkit-user-select:none; user-select:none; }
     html { touch-action:none; }
-    input { -webkit-user-select:text; user-select:text; }
+    input { -webkit-user-select:text!important; user-select:text!important; touch-action:manipulation!important; pointer-events:auto!important; }
     button { font:inherit; }
     #app { height:100dvh; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); display:grid; grid-template-columns:minmax(0,4fr) minmax(250px,1fr); background:#07090a; }
     .game { position:relative; min-width:0; overflow:hidden; background:#111; }
@@ -58,7 +58,7 @@
     .name-entry.active { display:block; }
     .name-entry label { display:block; margin-bottom:8px; color:var(--lime); font:800 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.12em; }
     .name-controls { display:grid; grid-template-columns:1fr auto; gap:8px; }
-    .name-controls input { min-width:0; border:1px solid #ffffff2e; background:#060909; color:#fff; padding:12px; font:750 .85rem/1 ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; outline:none; }
+    .name-controls input { min-width:0; border:1px solid #ffffff2e; background:#060909; color:#fff; padding:12px; font:750 16px/1 ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; outline:none; }
     .name-controls input:focus { border-color:var(--lime); box-shadow:0 0 0 2px #b7f72f20; }
     .name-controls button { border:0; background:#eef1ec; color:#0b0e0d; padding:0 16px; cursor:pointer; font-weight:900; letter-spacing:.08em; }
     #resultRestart { display:none; margin:22px auto 0; min-width:220px; border:0; padding:13px 18px; background:var(--lime); color:#0a0d0d; cursor:pointer; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
@@ -141,6 +141,18 @@
       .start-card h1 { font-size:clamp(1.8rem,8vh,3rem); }
       .intro { margin-bottom:14px; font-size:.84rem; }
       .hint { margin-top:9px; }
+    }
+    @media (pointer:coarse) and (min-aspect-ratio:4/3) and (max-height:600px) {
+      #app { grid-template-columns:minmax(0,1fr) clamp(168px,23vw,220px); grid-template-rows:1fr; }
+      .side { position:relative; display:flex; flex-direction:column; align-items:stretch; gap:0; padding:8px 10px 10px; border-top:0; border-left:1px solid #272b2d; }
+      .side-head,.rpm,.status,.restart,.brake-note,.keys { display:none; }
+      .map { display:block!important; position:relative!important; inset:auto!important; width:100%!important; height:clamp(118px,39vh,170px)!important; min-height:118px!important; margin:0 0 6px!important; padding:5px!important; border:1px solid #b7f72f55!important; background:#0a0e0e!important; box-shadow:0 0 0 1px #000!important; opacity:1; visibility:visible; z-index:8; }
+      .map::before { content:'TOPO MAP'; position:absolute; left:6px; bottom:5px; color:#b7f72f; font:800 .48rem/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em; z-index:2; }
+      .telemetry { display:flex; flex:1; flex-direction:column; align-items:stretch; justify-content:center; width:100%; min-height:0; margin:0; }
+      .speedrow { flex:0 0 auto; padding:0 0 8px; }
+      .pedals { display:block; }
+      .pedal { display:grid; grid-template-columns:44px 1fr 26px; gap:5px; margin:6px 0; }
+      .touch { right:calc(clamp(168px,23vw,220px) + 14px); }
     }
     @media (hover:none) and (orientation:portrait) {
       .map { top:58px; right:8px; width:min(32vw,124px); height:min(27vh,138px); }
@@ -471,7 +483,8 @@
   let lastShiftTap=0;
   window.apexShift=dir=>{const now=performance.now();if(now-lastShiftTap<140)return;lastShiftTap=now;shift(dir)};
   document.querySelectorAll('[data-tap]').forEach(b=>{const activate=e=>{e.preventDefault();e.stopPropagation();window.apexShift(b.dataset.tap==='up'?1:-1);b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),90)};b.addEventListener('touchend',activate,{passive:false});b.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')activate(e)},{passive:false});b.addEventListener('click',e=>{if(e.detail===0)activate(e)});});
-  let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now},{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+  const driverName=document.querySelector('#driverName');driverName.addEventListener('pointerdown',e=>e.stopPropagation());driverName.addEventListener('touchend',e=>{e.stopPropagation();driverName.focus()},{passive:true});
+  let lastTouchEnd=0;document.addEventListener('touchend',e=>{if(e.target.closest?.('input,button,textarea,select,[contenteditable="true"]')){lastTouchEnd=0;return}const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now},{passive:false});document.addEventListener('gesturestart',e=>{if(!e.target.closest?.('input,textarea,select'))e.preventDefault()},{passive:false});
   document.documentElement.dataset.weather=weather;document.documentElement.dataset.track=trackId;renderScores();resize();requestAnimationFrame(frame);
   if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
