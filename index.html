@@ -187,6 +187,20 @@
       .message.terminal .name-entry { margin-top:9px; }
       .message.terminal #resultRestart { margin-top:10px; padding:9px 14px; }
     }
+    @media (pointer:coarse) and (min-aspect-ratio:4/3) and (max-height:600px) {
+      .message.terminal { align-items:start; padding:4px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left)); }
+      .message.terminal .result-card { display:flex; flex-direction:column; width:min(680px,100%); max-height:calc(100dvh - 8px); padding:8px 16px 10px; }
+      .message.terminal #callout { font-size:clamp(1.2rem,5vh,1.85rem); }
+      .message.terminal #subcallout { margin-top:4px; font-size:.62rem; line-height:1.2; }
+      .message.terminal .name-entry { order:3; width:min(520px,100%); margin-top:7px; }
+      .message.terminal .name-entry label { margin-bottom:4px; }
+      .message.terminal .name-controls input { min-height:42px; }
+      .message.terminal .leaderboard { order:4; margin-top:7px; padding-top:5px; }
+      .message.terminal #resultRestart { order:5; min-width:180px; margin-top:7px; padding:7px 12px; }
+      .message.terminal .result-card:focus-within .leaderboard { display:none; }
+      .message.terminal .result-card:focus-within #callout,
+      .message.terminal .result-card:focus-within #subcallout { display:none; }
+    }
   </style>
 </head>
 <body>
@@ -483,7 +497,7 @@
   let lastShiftTap=0;
   window.apexShift=dir=>{const now=performance.now();if(now-lastShiftTap<140)return;lastShiftTap=now;shift(dir)};
   document.querySelectorAll('[data-tap]').forEach(b=>{const activate=e=>{e.preventDefault();e.stopPropagation();window.apexShift(b.dataset.tap==='up'?1:-1);b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),90)};b.addEventListener('touchend',activate,{passive:false});b.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')activate(e)},{passive:false});b.addEventListener('click',e=>{if(e.detail===0)activate(e)});});
-  const driverName=document.querySelector('#driverName');driverName.addEventListener('pointerdown',e=>e.stopPropagation());driverName.addEventListener('touchend',e=>{e.stopPropagation();driverName.focus()},{passive:true});
+  const driverName=document.querySelector('#driverName');const revealDriverName=()=>setTimeout(()=>driverName.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'}),120);driverName.addEventListener('pointerdown',e=>e.stopPropagation());driverName.addEventListener('touchend',e=>{e.stopPropagation();driverName.focus();revealDriverName()},{passive:true});driverName.addEventListener('focus',revealDriverName);if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if(document.activeElement===driverName)revealDriverName()});
   let lastTouchEnd=0;document.addEventListener('touchend',e=>{if(e.target.closest?.('input,button,textarea,select,[contenteditable="true"]')){lastTouchEnd=0;return}const now=Date.now();if(now-lastTouchEnd<320)e.preventDefault();lastTouchEnd=now},{passive:false});document.addEventListener('gesturestart',e=>{if(!e.target.closest?.('input,textarea,select'))e.preventDefault()},{passive:false});
   document.documentElement.dataset.weather=weather;document.documentElement.dataset.track=trackId;renderScores();resize();requestAnimationFrame(frame);
   if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
