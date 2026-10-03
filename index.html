@@ -110,6 +110,7 @@
     .touch button { pointer-events:auto; width:64px; height:58px; border:1px solid #ffffff45; color:#fff; background:#0b0e0eaa; backdrop-filter:blur(5px); font-weight:900; font-size:.7rem; }
     .touch .go { background:#b7f72fdc; color:#0b0e0e; }
     .touch .stop { background:#ff3d19d8; }
+    .touch button.pressed { transform:translateY(2px); filter:brightness(1.35); }
     html[data-native] .fullscreen-toggle { display:none; }
     @media (hover:none), (pointer:coarse) {
       .touch { display:flex; left:clamp(12px,2.4vw,24px); right:clamp(12px,2.4vw,24px); bottom:clamp(12px,2.4vh,22px); }
@@ -122,9 +123,12 @@
       .top-actions { gap:7px; }
       .weather-toggle button { padding:7px; }
       .sound-toggle { padding:8px; }
-      .side { padding:10px; }
-      .side-head,.map,.rpm,.status,.restart,.brake-note,.keys { display:none; }
-      .telemetry { display:flex; flex-direction:column; justify-content:center; margin:0; height:100%; }
+      .side { padding:8px 10px 10px; }
+      .side-head,.rpm,.status,.restart,.brake-note,.keys { display:none; }
+      .map { display:block; position:relative; inset:auto; width:100%; height:clamp(105px,37vh,145px); min-height:0; max-height:none; flex:0 0 auto; margin:0 0 6px; padding:4px; border:1px solid #ffffff1f; background:#0a0e0e; box-shadow:none; }
+      .map-status { inset:5px 5px auto; font-size:.48rem; }
+      .map-label { display:none; }
+      .telemetry { display:flex; flex:1; flex-direction:column; justify-content:center; margin:0; min-height:0; }
       .speedrow { padding:0 0 12px; }
       .speed { font-size:clamp(2.4rem,7vh,3.2rem); }
       .gear { font-size:clamp(2.4rem,7vh,3.2rem); }
@@ -136,6 +140,10 @@
       .start-card h1 { font-size:clamp(1.8rem,8vh,3rem); }
       .intro { margin-bottom:14px; font-size:.84rem; }
       .hint { margin-top:9px; }
+    }
+    @media (hover:none) and (orientation:portrait) {
+      .map { top:58px; right:8px; width:min(32vw,124px); height:min(27vh,138px); }
+      .map-status { font-size:.43rem; }
     }
     @media (max-width:800px) {
       #app { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; }
@@ -175,7 +183,7 @@
     </div>
     <div class="touch" aria-label="Touch controls">
       <div><button data-hold="throttle" class="go">← POWER</button><button data-hold="brake" class="stop">→ BRAKE</button></div>
-      <div><button data-tap="up">A · UP</button><button data-tap="down">Z · DOWN</button></div>
+      <div><button data-tap="up" aria-label="Shift up">SHIFT +</button><button data-tap="down" aria-label="Shift down">SHIFT −</button></div>
     </div>
   </section>
   <aside class="side" aria-label="Car telemetry">
@@ -448,7 +456,8 @@
   document.addEventListener('fullscreenchange',updateFullscreenButton);
   document.addEventListener('webkitfullscreenchange',updateFullscreenButton);
   document.querySelector('#nameEntry').addEventListener('submit',e=>{e.preventDefault();saveDriverName();});
-  document.querySelectorAll('[data-hold]').forEach(b=>{const name=b.dataset.hold;for(const ev of ['pointerdown','pointerenter'])b.addEventListener(ev,e=>{if(ev==='pointerdown')b.setPointerCapture(e.pointerId);keys[name]=true});for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>keys[name]=false)});document.querySelectorAll('[data-tap]').forEach(b=>b.addEventListener('pointerdown',()=>shift(b.dataset.tap==='up'?1:-1)));
+  document.querySelectorAll('[data-hold]').forEach(b=>{const name=b.dataset.hold;for(const ev of ['pointerdown','pointerenter'])b.addEventListener(ev,e=>{if(ev==='pointerdown')b.setPointerCapture(e.pointerId);keys[name]=true});for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>keys[name]=false)});
+  document.querySelectorAll('[data-tap]').forEach(b=>{let lastTap=0;const activate=e=>{e.preventDefault();e.stopPropagation();const now=performance.now();if(now-lastTap<180)return;lastTap=now;shift(b.dataset.tap==='up'?1:-1);b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),90)};b.addEventListener('pointerdown',activate,{passive:false});b.addEventListener('touchstart',activate,{passive:false});b.addEventListener('click',e=>{if(e.detail===0)activate(e)});});
   document.documentElement.dataset.weather=weather;document.documentElement.dataset.track=trackId;renderScores();resize();requestAnimationFrame(frame);
   if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
