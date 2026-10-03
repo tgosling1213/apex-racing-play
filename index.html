@@ -116,6 +116,7 @@
     @media (hover:none), (pointer:coarse) {
       .touch { display:flex; left:clamp(12px,2.4vw,24px); right:clamp(12px,2.4vw,24px); bottom:clamp(12px,2.4vh,22px); }
       .touch button { width:clamp(72px,10vw,96px); height:clamp(62px,13vh,78px); border-radius:4px; font-size:.72rem; touch-action:none; }
+      .fullscreen-toggle { display:none; }
       button { -webkit-tap-highlight-color:transparent; }
     }
     @media (hover:none) and (orientation:landscape) and (max-height:500px) {
@@ -298,7 +299,7 @@
   function writeScores(scores){memoryScores=[...memoryScores.filter(s=>s.weather!==weather||s.trackId!==trackId),...scores.map(s=>({...s,weather,trackId}))];try{localStorage.setItem(scoreKey(),JSON.stringify(scores));}catch{}}
   function recordScore(time){const entry={id:`run-${Date.now()}-${Math.random().toString(16).slice(2)}`,name:'DRIVER',time:Math.round(time*1000)/1000};const scores=[...readScores(),entry].sort((a,b)=>a.time-b.time).slice(0,5);writeScores(scores);return scores.some(s=>s.id===entry.id)?entry.id:null;}
   function renderScores(currentId=null){const scores=readScores(),list=document.querySelector('#scoreList');document.querySelector('#scoreMode').textContent=`APEX ${trackId} · ${condition().label} · TOP 5`;list.innerHTML='';for(let i=0;i<5;i++){const score=scores[i],li=document.createElement('li'),name=document.createElement('span'),time=document.createElement('span');if(score&&score.id===currentId)li.className='current';name.textContent=score?(score.name||'DRIVER').slice(0,12):'OPEN';time.className='score-time';time.textContent=score?`${score.time.toFixed(2)} S`:'--.--';li.append(name,time);list.appendChild(li);}}
-  function showNameEntry(scoreId){pendingScoreId=scoreId;const form=document.querySelector('#nameEntry'),input=document.querySelector('#driverName');form.classList.toggle('active',Boolean(scoreId));if(scoreId){input.value='';setTimeout(()=>input.focus(),80);}}
+  function showNameEntry(scoreId){pendingScoreId=scoreId;const form=document.querySelector('#nameEntry'),input=document.querySelector('#driverName');form.classList.toggle('active',Boolean(scoreId));if(scoreId){input.value='';leaveFullscreenForKeyboard();setTimeout(()=>input.focus(),180);}}
   function saveDriverName(){if(!pendingScoreId)return;const input=document.querySelector('#driverName'),name=(input.value.trim().toUpperCase().replace(/[^A-Z0-9 ._-]/g,'').slice(0,12)||'DRIVER'),scores=readScores();const score=scores.find(s=>s.id===pendingScoreId);if(score)score.name=name;writeScores(scores);renderScores(pendingScoreId);showNameEntry(null);}
   function setTerminal(on){ui.resultMessage.classList.toggle('terminal',on);document.querySelector('#app').classList.toggle('terminal-state',on);}
   function reset(){ Object.assign(car,{s:0,speed:0,gear:1,rpm:4100,throttle:0,brake:0,grip:1,shiftCut:0,finished:false,offTrack:false,crashed:false,crashPhase:0,entrySpeed:0,time:0,timerStarted:false,timingFlash:0,cornerMin:999,exitSpeed:0});running=true;showNameEntry(null);setTerminal(false);ui.callout.textContent='';ui.subcallout.textContent='';last=performance.now(); }
@@ -324,8 +325,14 @@
   function nativeFullscreenElement(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
   function fullscreenActive(){return Boolean(nativeFullscreenElement()||document.documentElement.classList.contains('fullscreen-fallback'));}
   function updateFullscreenButton(){const button=document.querySelector('#fullscreenToggle'),active=fullscreenActive();button.textContent=active?'EXIT FULL SCREEN':'FULL SCREEN';button.setAttribute('aria-pressed',String(active));button.title=active?'Exit full screen (Esc or F)':'Enter full screen (F)';resize();}
+  async function leaveFullscreenForKeyboard(){
+    document.documentElement.classList.remove('fullscreen-fallback');
+    if(nativeFullscreenElement()){const exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit){try{await exit.call(document);}catch{}}}
+    updateFullscreenButton();
+  }
   async function enterFullscreen(){
     if(document.documentElement.dataset.native){resize();return;}
+    if(navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches||navigator.standalone||matchMedia('(display-mode:standalone)').matches){resize();return;}
     if(fullscreenActive())return;
     const root=document.documentElement,request=root.requestFullscreen||root.webkitRequestFullscreen;
     if(request){try{await request.call(root);updateFullscreenButton();return;}catch{}}
