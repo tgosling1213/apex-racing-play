@@ -115,7 +115,8 @@
     html[data-native] .fullscreen-toggle { display:none; }
     @media (hover:none), (pointer:coarse) {
       .touch { display:flex; left:clamp(12px,2.4vw,24px); right:clamp(12px,2.4vw,24px); bottom:clamp(12px,2.4vh,22px); }
-      .touch button { width:clamp(72px,10vw,96px); height:clamp(62px,13vh,78px); border-radius:4px; font-size:.72rem; touch-action:none; }
+      .touch button { width:clamp(72px,10vw,96px); height:clamp(62px,13vh,78px); border-radius:4px; font-size:.72rem; touch-action:none; -webkit-touch-callout:none!important; -webkit-user-select:none!important; user-select:none!important; }
+      .touch button:focus { outline:none; }
       .fullscreen-toggle { display:none; }
       button { -webkit-tap-highlight-color:transparent; }
     }
@@ -500,7 +501,7 @@
   document.addEventListener('fullscreenchange',updateFullscreenButton);
   document.addEventListener('webkitfullscreenchange',updateFullscreenButton);
   document.querySelector('#nameEntry').addEventListener('submit',e=>{e.preventDefault();saveDriverName();});
-  document.querySelectorAll('[data-hold]').forEach(b=>{const name=b.dataset.hold;for(const ev of ['pointerdown','pointerenter'])b.addEventListener(ev,e=>{if(ev==='pointerdown')b.setPointerCapture(e.pointerId);keys[name]=true});for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>keys[name]=false)});
+  document.querySelectorAll('[data-hold]').forEach(b=>{const name=b.dataset.hold;b.addEventListener('contextmenu',e=>e.preventDefault());for(const ev of ['pointerdown','pointerenter'])b.addEventListener(ev,e=>{if(ev==='pointerdown')b.setPointerCapture(e.pointerId);keys[name]=true});for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>keys[name]=false)});
   let lastShiftTap=0;
   window.apexShift=dir=>{const now=performance.now();if(now-lastShiftTap<140)return;lastShiftTap=now;shift(dir)};
   document.querySelectorAll('[data-tap]').forEach(b=>{const activate=e=>{e.preventDefault();e.stopPropagation();window.apexShift(b.dataset.tap==='up'?1:-1);b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),90)};b.addEventListener('touchend',activate,{passive:false});b.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')activate(e)},{passive:false});b.addEventListener('click',e=>{if(e.detail===0)activate(e)});});

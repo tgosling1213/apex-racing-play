@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apex-racing-v6';
+const CACHE_NAME = 'apex-racing-v7';
 const APP_SHELL = [
   './',
   './index.html',
